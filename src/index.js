@@ -46,7 +46,7 @@ program
   )
   .option(
     '-x, --extension <fileExtension>',
-    'Which file extension to use for the component (default: "js")',
+    'Which file extension to use for the component (default: "tsx")',
     config.extension
   )
   .parse(process.argv);
@@ -60,11 +60,20 @@ const templatePath = `./templates/${program.type}.js`;
 const componentDir = `${program.dir}/${componentName}`;
 const filePath = `${componentDir}/${componentName}.${program.extension}`;
 const indexPath = `${componentDir}/index.${program.extension}`;
-
+const camalize = function camelize(str) {
+  return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function(match, index) {
+    if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
+    return index === 0 ? match.toLowerCase() : match.toUpperCase();
+  });
+}
+const cssFileName = camalize(componentName) + '.module.scss';
+const cssPath = `${componentDir}/${cssFileName}`;
+const cssTemplate = ""
 // Our index template is super straightforward, so we'll just inline it for now.
 const indexTemplate = prettify(`\
-export * from './${componentName}';
-export { default } from './${componentName}';
+import ${componentName} from './${componentName}';
+
+export default ${componentName};
 `);
 
 logIntro({ name: componentName, dir: componentDir, type: program.type });
@@ -122,6 +131,14 @@ mkDirPromise(componentDir)
     logItemCompletion('Index file built and saved to disk.');
     return template;
   })
+  .then((template) => {
+    writeFilePromise(cssPath, prettify(cssTemplate))
+  }
+    )
+    .then((template) => {
+      logItemCompletion('SASS file built and saved to disk.');
+      return template;
+    })
   .then((template) => {
     logConclusion();
   })
